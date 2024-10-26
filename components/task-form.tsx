@@ -48,8 +48,14 @@ export function TaskForm({
     },
   });
 
-  const handleSubmit = (data: Omit<Task, "id">) => {
-    onSubmit(data);
+  const handleSubmit = (data: {
+    title: string;
+    description: string;
+    priority: "low" | "medium" | "high";
+    state: "todo" | "doing" | "done";
+    image?: string;
+  }) => {
+    onSubmit(data as Omit<Task, "id">);
   };
 
   const isUpdateLoading = useSelector(

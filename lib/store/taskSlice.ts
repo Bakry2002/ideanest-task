@@ -2,12 +2,15 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 export interface Task {
   id: string;
-  userId: string; // connect to user
   title: string;
   description: string;
   priority: "low" | "medium" | "high";
   state: "todo" | "doing" | "done";
   image?: string;
+  ownerId: string;
+  assignedUsers: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface TasksState {
@@ -32,18 +35,6 @@ export const tasksSlice = createSlice({
   name: "tasks",
   initialState,
   reducers: {
-    // selectUserTasks: (state, action: PayloadAction<string>) => {
-    //   state.tasks = state.tasks.filter(
-    //     (task) => task.userId === action.payload
-    //   );
-    // },
-    // Update addTask to include userId
-    // addTask: (state, action: PayloadAction<Task>) => {
-    //   if (!action.payload.userId) {
-    //     return;
-    //   }
-    //   state.tasks.push(action.payload);
-    // },
     setCreateLoading: (state, action: PayloadAction<boolean>) => {
       state.loadingStates = {
         ...state.loadingStates,
@@ -63,32 +54,44 @@ export const tasksSlice = createSlice({
       state.loadingStates.delete[action.payload.id] = action.payload.loading;
     },
     addTask: (state, action: PayloadAction<Task>) => {
-      state.tasks.push(action.payload);
+      state.tasks.unshift({
+        ...action.payload,
+        assignedUsers: action.payload.assignedUsers || [],
+      });
     },
     updateTask: (state, action: PayloadAction<Task>) => {
       const index = state.tasks.findIndex(
         (task) => task.id === action.payload.id
       );
       if (index !== -1) {
-        state.tasks[index] = action.payload;
+        state.tasks[index] = {
+          ...action.payload,
+          assignedUsers: action.payload.assignedUsers || [],
+          updatedAt: new Date().toISOString(),
+        };
       }
     },
+    // This is mainly for optimistic updates when dragging and dropping tasks in the Kanban board
     optimisticUpdateTask: (state, action: PayloadAction<Task>) => {
       const index = state.tasks.findIndex(
         (task) => task.id === action.payload.id
       );
       if (index !== -1) {
-        state.tasks[index] = action.payload;
+        state.tasks[index] = {
+          ...action.payload,
+          assignedUsers: action.payload.assignedUsers || [],
+          updatedAt: new Date().toISOString(),
+        };
       }
     },
     deleteTask: (state, action: PayloadAction<string>) => {
       state.tasks = state.tasks.filter((task) => task.id !== action.payload);
-      // Clean up loading states
       delete state.loadingStates.update[action.payload];
       delete state.loadingStates.delete[action.payload];
     },
   },
 });
+
 export const {
   addTask,
   updateTask,

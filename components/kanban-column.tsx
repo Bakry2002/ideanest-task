@@ -1,4 +1,5 @@
 import { Task } from "@/lib/store/taskSlice";
+import { UserProfile } from "@/lib/store/userSlice";
 import { useDroppable } from "@dnd-kit/core";
 import KanbanTaskCard from "./kanban-task-card";
 
@@ -8,6 +9,7 @@ interface Props {
   tasks: Task[];
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
+  userProfile: UserProfile | null;
 }
 
 const columnStyles = {
@@ -16,7 +18,14 @@ const columnStyles = {
   done: "bg-green-50 border-green-200",
 };
 
-const KanbanColumn = ({ title, status, tasks, onEdit, onDelete }: Props) => {
+const KanbanColumn = ({
+  title,
+  status,
+  tasks,
+  onEdit,
+  onDelete,
+  userProfile,
+}: Props) => {
   const { setNodeRef } = useDroppable({
     id: status,
   });
@@ -39,6 +48,7 @@ const KanbanColumn = ({ title, status, tasks, onEdit, onDelete }: Props) => {
             task={task}
             onEdit={onEdit}
             onDelete={onDelete}
+            userProfile={userProfile}
           />
         ))}
       </div>

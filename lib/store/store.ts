@@ -2,8 +2,8 @@ import { configureStore } from "@reduxjs/toolkit";
 import { persistReducer, persistStore } from "redux-persist";
 import createWebStorage from "redux-persist/lib/storage/createWebStorage";
 import { tasksSlice } from "./taskSlice";
+import { userSlice } from "./userSlice";
 
-// Dummy storage for server-side rendering i.e. Next.js
 const createNoopStorage = () => {
   return {
     getItem(_key: string) {
@@ -29,11 +29,13 @@ const persistConfig = {
   whitelist: ["tasks", "user"],
 };
 
-const persistedReducer = persistReducer(persistConfig, tasksSlice.reducer);
+const persistedTasksReducer = persistReducer(persistConfig, tasksSlice.reducer);
+const persistedUserReducer = persistReducer(persistConfig, userSlice.reducer);
 
 export const store = configureStore({
   reducer: {
-    tasks: persistedReducer,
+    tasks: persistedTasksReducer,
+    user: persistedUserReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

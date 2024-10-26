@@ -1,121 +1,100 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { useTaskPermissions } from "@/hooks/use-task-permissions";
+import { Task } from "@/lib/store/taskSlice";
+import { UserProfile } from "@/lib/store/userSlice";
+import { Edit, Trash } from "lucide-react";
+import { Button } from "./ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { RootState } from "@/lib/store/store";
-import { Task } from "@/lib/store/taskSlice";
-import { LoaderCircle, Pencil, Trash2 } from "lucide-react";
-import Image from "next/image";
-import { useSelector } from "react-redux";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./ui/tooltip";
+} from "./ui/card";
 
 interface TaskCardProps {
   task: Task;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
+  userProfile: UserProfile | null;
 }
 
-const priorityColors = {
-  low: "bg-green-100 text-green-800 hover:bg-green-200",
-  medium: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200",
-  high: "bg-red-100 text-red-800 hover:bg-red-200",
-};
-
-const stateColors = {
-  todo: "bg-gray-100 text-gray-800 hover:bg-gray-200",
-  doing: "bg-blue-100 text-blue-800 hover:bg-blue-200",
-  done: "bg-purple-100 text-purple-800 hover:bg-purple-200",
-};
-
-export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
-  const isUpdateLoading = useSelector(
-    (state: RootState) => state.tasks.loadingStates.update[task.id]
-  );
-  const isDeleteLoading = useSelector(
-    (state: RootState) => state.tasks.loadingStates.delete[task.id]
-  );
+export function TaskCard({
+  task,
+  onEdit,
+  onDelete,
+  userProfile,
+}: TaskCardProps) {
+  const { canEdit, canDelete } = useTaskPermissions(task, userProfile);
 
   return (
-    <TooltipProvider delayDuration={50}>
-      <Card className="w-full">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {task.image && (
-                <Image
-                  src={task.image}
-                  alt="task image"
-                  width={40}
-                  height={40}
-                  className="aspect-square rounded-full object-cover"
-                />
-              )}
-              <CardTitle className="text-xl font-bold">{task.title}</CardTitle>
-            </div>
-
-            <div className="flex gap-2">
-              <Badge className={priorityColors[task.priority]}>
-                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-              </Badge>
-              <Badge className={stateColors[task.state]}>
-                {task.state.charAt(0).toUpperCase() + task.state.slice(1)}
-              </Badge>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-600 dark:text-gray-300">{task.description}</p>
-        </CardContent>
-        <CardFooter className="flex justify-end gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex justify-between items-start">
+          <span>{task.title}</span>
+          <div className="flex gap-2">
+            {canEdit && (
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
                 onClick={() => onEdit(task)}
-                disabled={isUpdateLoading || isDeleteLoading}
+                className="h-8 w-8"
               >
-                {isUpdateLoading ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Pencil className="h-4 w-4" />
-                )}
+                <Edit className="h-4 w-4" />
               </Button>
-            </TooltipTrigger>
-            <TooltipContent>Edit</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
+            )}
+            {canDelete && (
               <Button
-                variant="destructive"
+                variant="ghost"
                 size="icon"
                 onClick={() => onDelete(task.id)}
-                disabled={isUpdateLoading || isDeleteLoading}
+                className="h-8 w-8 text-destructive"
               >
-                {isDeleteLoading ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
+                <Trash className="h-4 w-4" />
               </Button>
-            </TooltipTrigger>
-            <TooltipContent>Delete</TooltipContent>
-          </Tooltip>
-        </CardFooter>
-      </Card>
-    </TooltipProvider>
+            )}
+          </div>
+        </CardTitle>
+        <CardDescription className="flex flex-col gap-1">
+          <span>Created {task.createdAt}</span>
+          <span className="text-xs text-muted-foreground">
+            Owner: {task.ownerId === userProfile?.id ? "You" : "Other"}
+          </span>
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          {task.description}
+        </p>
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        <div className="flex items-center gap-2">
+          <span
+            className={`px-2 py-1 rounded-full text-xs ${
+              task.priority === "high"
+                ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                : task.priority === "medium"
+                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+            }`}
+          >
+            {task.priority}
+          </span>
+          <span
+            className={`px-2 py-1 rounded-full text-xs ${
+              task.state === "todo"
+                ? "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+                : task.state === "doing"
+                ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+            }`}
+          >
+            {task.state}
+          </span>
+        </div>
+      </CardFooter>
+    </Card>
   );
 }
