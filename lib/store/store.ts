@@ -26,7 +26,7 @@ const storage =
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["tasks"],
+  whitelist: ["tasks", "user"],
 };
 
 const persistedReducer = persistReducer(persistConfig, tasksSlice.reducer);
