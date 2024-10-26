@@ -16,7 +16,7 @@ interface ViewToggleProps {
 
 export function ViewToggle({ view, onViewChange }: ViewToggleProps) {
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={50}>
       <div className="flex gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
