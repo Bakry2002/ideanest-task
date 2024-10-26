@@ -1,6 +1,6 @@
 "use client";
 
-import { KanbanBoard } from "@/components/kanban-board";
+import KanbanBoard from "@/components/kanban-board";
 import { TaskCard } from "@/components/task-card";
 import { TaskFilters } from "@/components/task-filters";
 import { TaskForm } from "@/components/task-form";
@@ -24,7 +24,7 @@ import {
   Task,
   updateTask,
 } from "@/lib/store/taskSlice";
-import { DropResult } from "@hello-pangea/dnd";
+
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -42,7 +42,6 @@ export default function Home() {
   const [stateFilter, setStateFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [view, setView] = useState<"grid" | "kanban">("grid");
-
   const simulateServerOperation = async (
     operation: () => void,
     loadingAction: () => void,
@@ -104,65 +103,67 @@ export default function Home() {
     );
   };
 
-  const handleDragEnd = async (result: DropResult) => {
-    if (!result.destination) return;
+  const filteredTasks =
+    tasks?.filter((task) => {
+      const matchesSearch = task.title
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      const matchesPriority =
+        priorityFilter === "all" || task.priority === priorityFilter;
+      const matchesState = stateFilter === "all" || task.state === stateFilter;
+      return matchesSearch && matchesPriority && matchesState;
+    }) || [];
 
-    const taskId = result.draggableId;
-    const newState = result.destination.droppableId as Task["state"];
-    const task = tasks.find((t) => t.id === taskId);
+  const handleDragEnd = (result: {
+    active: { id: string };
+    over: { id: string } | null;
+  }) => {
+    const { active, over } = result;
 
-    if (task && task.state !== newState) {
-      const originalState = task.state;
-      // Optimistically update the task state
-      dispatch(optimisticUpdateTask({ ...task, state: newState }));
+    if (!over) return;
 
-      await simulateServerOperation(
+    const task = tasks.find((t) => t.id === active.id);
+    if (task) {
+      const updatedTask = {
+        ...task,
+        state: over.id as Task["state"],
+      };
+
+      dispatch(optimisticUpdateTask(updatedTask));
+      simulateServerOperation(
         () => {
-          dispatch(updateTask({ ...task, state: newState }));
-          toast.success(`Task moved to ${newState}`);
+          dispatch(updateTask(updatedTask));
+          toast.success("Task status updated");
         },
-        () => dispatch(setUpdateLoading({ id: taskId, loading: true })),
-        () => dispatch(setUpdateLoading({ id: taskId, loading: false })),
-        // Rollback function in case of error
-        () => dispatch(optimisticUpdateTask({ ...task, state: originalState }))
+        () => dispatch(setUpdateLoading({ id: updatedTask.id, loading: true })),
+        () =>
+          dispatch(setUpdateLoading({ id: updatedTask.id, loading: false })),
+        () => dispatch(optimisticUpdateTask({ ...task, state: task.state }))
       );
     }
   };
 
-  const filteredTasks = tasks.filter((task) => {
-    const matchesSearch = task.title
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesPriority =
-      priorityFilter === "all" || task.priority === priorityFilter;
-    const matchesState = stateFilter === "all" || task.state === stateFilter;
-    return matchesSearch && matchesPriority && matchesState;
-  });
-
   return (
     <main className="container mx-auto py-2 px-4">
-      <div className="container mx-auto py-4 px-4">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-          <h1 className="text-4xl font-bold">Task Management</h1>
-          <div className="flex gap-4 items-center">
-            <ViewToggle view={view} onViewChange={setView} />
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" /> Add Task
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px]">
-                <DialogHeader>
-                  <DialogTitle>Create New Task</DialogTitle>
-                </DialogHeader>
-                <TaskForm onSubmit={handleCreateTask} />
-              </DialogContent>
-            </Dialog>
-          </div>
+      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <h1 className="text-4xl font-bold">Task Management</h1>
+        <div className="flex gap-4 items-center">
+          <ViewToggle view={view} onViewChange={setView} />
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" /> Add Task
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Create New Task</DialogTitle>
+              </DialogHeader>
+              <TaskForm onSubmit={handleCreateTask} />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
-
       <TaskFilters
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -171,8 +172,7 @@ export default function Home() {
         stateFilter={stateFilter}
         onStateChange={setStateFilter}
       />
-
-      {filteredTasks.length === 0 ? (
+      {(filteredTasks?.length || 0) === 0 ? (
         <div className="text-center py-12">
           <p className="text-lg text-gray-500">
             No tasks found matching your filters.
@@ -192,12 +192,11 @@ export default function Home() {
       ) : (
         <KanbanBoard
           tasks={filteredTasks}
+          onDragEnd={handleDragEnd}
           onEdit={setEditingTask}
           onDelete={handleDeleteTask}
-          onDragEnd={handleDragEnd}
         />
       )}
-
       {editingTask && (
         <Dialog open={!!editingTask} onOpenChange={() => setEditingTask(null)}>
           <DialogContent className="sm:max-w-[600px]">

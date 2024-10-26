@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/page-header";
 import { Providers } from "@/components/providers/providers";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
@@ -18,7 +19,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <Providers>{children}</Providers>
+        <Providers>
+          <PageHeader />
+          {children}
+        </Providers>
       </body>
     </html>
   );
