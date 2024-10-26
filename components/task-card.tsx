@@ -50,19 +50,21 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
   return (
     <TooltipProvider delayDuration={50}>
       <Card className="w-full">
-        {task.image && (
-          <div className="relative w-full h-48">
-            <Image
-              src={task.image}
-              alt={task.title}
-              fill
-              className="object-cover rounded-t-lg"
-            />
-          </div>
-        )}
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold">{task.title}</CardTitle>
+            <div className="flex items-center gap-2">
+              {task.image && (
+                <Image
+                  src={task.image}
+                  alt="task image"
+                  width={40}
+                  height={40}
+                  className="aspect-square rounded-full object-cover"
+                />
+              )}
+              <CardTitle className="text-xl font-bold">{task.title}</CardTitle>
+            </div>
+
             <div className="flex gap-2">
               <Badge className={priorityColors[task.priority]}>
                 {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
